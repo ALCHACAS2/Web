@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import BarcodeReader from "react-barcode-reader";  // Importar la librería
+import BarcodeReader from "react-barcode-reader"; // Importar la librería
 
 export default function ScannerPage() {
   const [codes, setCodes] = useState([]);
@@ -51,6 +51,7 @@ export default function ScannerPage() {
           <BarcodeReader
             onError={handleError}
             onScan={handleScan}
+            facingMode="environment" // Habilitar la cámara trasera
             style={{ width: '100%' }}
           />
         )}
