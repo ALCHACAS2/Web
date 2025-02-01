@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import BarcodeScanner from "react-qr-scanner";
+import BarcodeReader from "react-barcode-reader";  // Importar la librería
 
 export default function ScannerPage() {
   const [codes, setCodes] = useState([]);
@@ -7,8 +7,8 @@ export default function ScannerPage() {
 
   const handleScan = useCallback((data) => {
     if (data) {
-      const newCode = data.text;
-
+      const newCode = data;
+      
       // Verificar si el código ya está en la lista
       if (!codes.includes(newCode)) {
         setCodes((prev) => [...prev, newCode]);  // Agregar el código si no está en la lista
@@ -48,15 +48,10 @@ export default function ScannerPage() {
     }}>
       <div style={{ width: '100%', maxWidth: '500px' }}>
         {isScanning && (
-          <BarcodeScanner
-            delay={300}
+          <BarcodeReader
             onError={handleError}
             onScan={handleScan}
             style={{ width: '100%' }}
-            constraints={{
-              audio: false,
-              video: { facingMode: "environment" }
-            }}
           />
         )}
       </div>
