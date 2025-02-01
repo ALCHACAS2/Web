@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import BarcodeReader from "react-barcode-reader"; // Importar la librería
 
 export default function ScannerPage() {
   const [codes, setCodes] = useState([]);
   const [isScanning, setIsScanning] = useState(true);
   const [hasPermission, setHasPermission] = useState(null);
+  const videoRef = useRef(null);
 
   // Verificar permisos para acceder a la cámara
   useEffect(() => {
@@ -52,6 +53,32 @@ export default function ScannerPage() {
     setIsScanning(prev => !prev);
   }, []);
 
+  // Configurar el stream de la cámara para mostrar el video
+  useEffect(() => {
+    const startCamera = async () => {
+      if (videoRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }, // Usar la cámara trasera
+          });
+          videoRef.current.srcObject = stream;
+        } catch (err) {
+          console.error("Error accessing the camera:", err);
+        }
+      }
+    };
+
+    if (isScanning) {
+      startCamera();
+    } else if (videoRef.current && videoRef.current.srcObject) {
+      // Detener el stream de la cámara cuando el escáner está pausado
+      const stream = videoRef.current.srcObject;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, [isScanning]);
+
   // Si no hay permisos, mostrar un mensaje
   if (hasPermission === false) {
     return <div>No se puede acceder a la cámara. Por favor, verifica los permisos.</div>;
@@ -69,14 +96,36 @@ export default function ScannerPage() {
         {hasPermission === null ? (
           <div>Verificando permisos...</div>
         ) : (
-          isScanning && (
-            <BarcodeReader
-              onError={handleError}
-              onScan={handleScan}
-              facingMode="environment" // Habilitar la cámara trasera
-              style={{ width: '100%' }}
-            />
-          )
+          <>
+            {isScanning && (
+              <div style={{ width: '100%', maxWidth: '500px', position: 'relative' }}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc'
+                  }}
+                ></video>
+                <BarcodeReader
+                  onError={handleError}
+                  onScan={handleScan}
+                  facingMode="environment" // Habilitar la cámara trasera
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0
+                  }}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
