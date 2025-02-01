@@ -1,9 +1,23 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import BarcodeReader from "react-barcode-reader"; // Importar la librería
 
 export default function ScannerPage() {
   const [codes, setCodes] = useState([]);
   const [isScanning, setIsScanning] = useState(true);
+  const [hasPermission, setHasPermission] = useState(null);
+
+  // Verificar permisos para acceder a la cámara
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasPermission(true);
+      } catch (err) {
+        setHasPermission(false);
+      }
+    };
+    checkPermission();
+  }, []);
 
   const handleScan = useCallback((data) => {
     if (data) {
@@ -14,7 +28,7 @@ export default function ScannerPage() {
         setCodes((prev) => [...prev, newCode]);  // Agregar el código si no está en la lista
       }
     }
-  }, [codes]);  // Dependencia de codes para mantener la lista actualizada
+  }, [codes]);
 
   const handleError = useCallback((err) => {
     console.error("Scanner Error:", err);
@@ -38,6 +52,11 @@ export default function ScannerPage() {
     setIsScanning(prev => !prev);
   }, []);
 
+  // Si no hay permisos, mostrar un mensaje
+  if (hasPermission === false) {
+    return <div>No se puede acceder a la cámara. Por favor, verifica los permisos.</div>;
+  }
+
   return (
     <div style={{
       display: 'flex',
@@ -47,13 +66,17 @@ export default function ScannerPage() {
       gap: '1rem'
     }}>
       <div style={{ width: '100%', maxWidth: '500px' }}>
-        {isScanning && (
-          <BarcodeReader
-            onError={handleError}
-            onScan={handleScan}
-            facingMode="environment" // Habilitar la cámara trasera
-            style={{ width: '100%' }}
-          />
+        {hasPermission === null ? (
+          <div>Verificando permisos...</div>
+        ) : (
+          isScanning && (
+            <BarcodeReader
+              onError={handleError}
+              onScan={handleScan}
+              facingMode="environment" // Habilitar la cámara trasera
+              style={{ width: '100%' }}
+            />
+          )
         )}
       </div>
 
