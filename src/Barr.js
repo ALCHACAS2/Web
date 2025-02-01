@@ -1,198 +1,167 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import BarcodeReader from "react-barcode-reader"; // Importar la librería
+import React, { useState, useEffect, useRef } from 'react';
+import Quagga from 'quagga';
 
-export default function ScannerPage() {
-  const [codes, setCodes] = useState([]);
-  const [isScanning, setIsScanning] = useState(true);
-  const [hasPermission, setHasPermission] = useState(null);
-  const videoRef = useRef(null);
+const BarcodeScanner = () => {
+  const [scannedItems, setScannedItems] = useState([]);
+  const [lastScanned, setLastScanned] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const scannerRef = useRef(null);
 
-  // Verificar permisos para acceder a la cámara
-  useEffect(() => {
-    const checkPermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasPermission(true);
-      } catch (err) {
-        setHasPermission(false);
-      }
-    };
-    checkPermission();
-  }, []);
-
-  const handleScan = useCallback((data) => {
-    if (data) {
-      const newCode = data;
-      
-      // Verificar si el código ya está en la lista
-      if (!codes.includes(newCode)) {
-        setCodes((prev) => [...prev, newCode]);  // Agregar el código si no está en la lista
-      }
-    }
-  }, [codes]);
-
-  const handleError = useCallback((err) => {
-    console.error("Scanner Error:", err);
-  }, []);
-
-  const clearCodes = useCallback(() => {
-    setCodes([]);
-  }, []);
-
-  const copyToClipboard = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(codes.join("\n"));
-      alert("Copied to clipboard!"); // Simple feedback
-    } catch (err) {
-      console.error("Failed to copy:", err);
-      alert("Failed to copy to clipboard");
-    }
-  }, [codes]);
-
-  const toggleScanner = useCallback(() => {
-    setIsScanning(prev => !prev);
-  }, []);
-
-  // Configurar el stream de la cámara para mostrar el video
-  useEffect(() => {
-    const startCamera = async () => {
-      if (videoRef.current) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" }, // Usar la cámara trasera
-          });
-          videoRef.current.srcObject = stream;
-        } catch (err) {
-          console.error("Error accessing the camera:", err);
+  const startScanner = () => {
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: scannerRef.current,
+        constraints: {
+          facingMode: "environment",
+          aspectRatio: { min: 1, max: 2 }
+        },
+      },
+      locate: true,
+      decoder: {
+        readers: ["ean_reader", "ean_8_reader"],
+        debug: {
+          drawBoundingBox: true,
+          showPattern: true,
         }
+      },
+      frequency: 10
+    }, (err) => {
+      if (err) {
+        console.error("Error iniciando el escáner:", err);
+        return;
       }
+      Quagga.start();
+      setIsScanning(true);
+    });
+
+    // Agregamos un buffer para mejorar la precisión
+    let lastResult = null;
+    let sameResultCount = 0;
+
+    Quagga.onDetected((result) => {
+      const code = result.codeResult.code;
+      
+      // Verificamos que el código tenga la longitud correcta (EAN-13 o EAN-8)
+      if (code.length !== 13 && code.length !== 8) return;
+
+      // Verificamos que sea el mismo código varias veces para evitar errores
+      if (code === lastResult) {
+        sameResultCount++;
+        if (sameResultCount >= 3) { // Esperamos 3 lecturas iguales
+          setLastScanned(code);
+          setScannedItems(prev => {
+            // Evitamos duplicados
+            if (!prev.some(item => item.code === code)) {
+              return [...prev, { code, id: Date.now() }];
+            }
+            return prev;
+          });
+          stopScanner();
+          sameResultCount = 0;
+        }
+      } else {
+        sameResultCount = 1;
+        lastResult = code;
+      }
+    });
+  };
+
+  const stopScanner = () => {
+    Quagga.stop();
+    setIsScanning(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      Quagga.stop();
     };
-
-    if (isScanning) {
-      startCamera();
-    } else if (videoRef.current && videoRef.current.srcObject) {
-      // Detener el stream de la cámara cuando el escáner está pausado
-      const stream = videoRef.current.srcObject;
-      const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-  }, [isScanning]);
-
-  // Si no hay permisos, mostrar un mensaje
-  if (hasPermission === false) {
-    return <div>No se puede acceder a la cámara. Por favor, verifica los permisos.</div>;
-  }
+  }, []);
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '1rem',
-      gap: '1rem'
+      maxWidth: '400px',
+      margin: '20px auto',
+      padding: '20px',
     }}>
-      <div style={{ width: '100%', maxWidth: '500px' }}>
-        {hasPermission === null ? (
-          <div>Verificando permisos...</div>
-        ) : (
-          <>
-            {isScanning && (
-              <div style={{ width: '100%', maxWidth: '500px', position: 'relative' }}>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc'
-                  }}
-                ></video>
-                <BarcodeReader
-                  onError={handleError}
-                  onScan={handleScan}
-                  facingMode="environment" // Habilitar la cámara trasera
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0
-                  }}
-                />
-              </div>
-            )}
-          </>
-        )}
+      <button 
+        onClick={isScanning ? stopScanner : startScanner}
+        style={{
+          width: '100%',
+          padding: '15px',
+          backgroundColor: isScanning ? '#dc2626' : '#2563eb',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '16px',
+          marginBottom: '20px'
+        }}
+      >
+        {isScanning ? '⏹️ Detener' : '📷 Escanear'}
+      </button>
+
+      <div 
+        ref={scannerRef}
+        style={{
+          position: 'relative',
+          border: isScanning ? '2px solid #2563eb' : 'none',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          display: isScanning ? 'block' : 'none',
+          marginBottom: '20px'
+        }}
+      >
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          height: '2px',
+          backgroundColor: 'red',
+          zIndex: 1
+        }}/>
       </div>
 
-      <div style={{ width: '100%', maxWidth: '500px' }}>
-        <textarea
-          style={{
-            width: '100%',
-            height: '160px',
-            padding: '8px',
-            marginBottom: '1rem',
-            borderRadius: '4px',
-            border: '1px solid #ccc'
-          }}
-          value={codes.join("\n")}
-          readOnly
-          placeholder="Scanned codes will appear here..."
-        />
-
+      {lastScanned && (
         <div style={{
-          display: 'flex',
-          gap: '8px',
-          justifyContent: 'center'
+          backgroundColor: '#f3f4f6',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '20px'
         }}>
-          <button
-            onClick={toggleScanner}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              background: '#fff',
-              cursor: 'pointer'
-            }}
-          >
-            {isScanning ? "Pause Scanner" : "Start Scanner"}
-          </button>
-          <button
-            onClick={clearCodes}
-            disabled={!codes.length}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              background: '#ff4444',
-              color: 'white',
-              cursor: codes.length ? 'pointer' : 'not-allowed',
-              opacity: codes.length ? 1 : 0.5
-            }}
-          >
-            Clear
-          </button>
-          <button
-            onClick={copyToClipboard}
-            disabled={!codes.length}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              background: '#4444ff',
-              color: 'white',
-              cursor: codes.length ? 'pointer' : 'not-allowed',
-              opacity: codes.length ? 1 : 0.5
-            }}
-          >
-            Copy to Clipboard
-          </button>
+          <p style={{ margin: 0, fontWeight: 'bold' }}>Último escaneado:</p>
+          <p style={{ 
+            margin: '5px 0 0 0',
+            fontFamily: 'monospace',
+            fontSize: '18px' 
+          }}>{lastScanned}</p>
         </div>
+      )}
+
+      <div style={{
+        maxHeight: '300px',
+        overflowY: 'auto',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px'
+      }}>
+        {scannedItems.map((item) => (
+          <div
+            key={item.id}
+            style={{
+              padding: '10px',
+              borderBottom: '1px solid #e5e7eb',
+              fontFamily: 'monospace',
+              fontSize: '16px'
+            }}
+          >
+            {item.code}
+          </div>
+        ))}
       </div>
     </div>
   );
-}
+};
+
+export default BarcodeScanner;
