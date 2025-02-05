@@ -36,23 +36,18 @@ const BarcodeScanner = () => {
       setIsScanning(true);
     });
 
-    // Agregamos un buffer para mejorar la precisión
     let lastResult = null;
     let sameResultCount = 0;
 
     Quagga.onDetected((result) => {
       const code = result.codeResult.code;
-      
-      // Verificamos que el código tenga la longitud correcta (EAN-13 o EAN-8)
       if (code.length !== 13 && code.length !== 8) return;
 
-      // Verificamos que sea el mismo código varias veces para evitar errores
       if (code === lastResult) {
         sameResultCount++;
-        if (sameResultCount >= 3) { // Esperamos 3 lecturas iguales
+        if (sameResultCount >= 3) {
           setLastScanned(code);
           setScannedItems(prev => {
-            // Evitamos duplicados
             if (!prev.some(item => item.code === code)) {
               return [...prev, { code, id: Date.now() }];
             }
@@ -79,6 +74,13 @@ const BarcodeScanner = () => {
     };
   }, []);
 
+  const copyToClipboard = () => {
+    const text = scannedItems.map(item => item.code).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Lista copiada al portapapeles");
+    }).catch(err => console.error("Error al copiar:", err));
+  };
+
   return (
     <div style={{
       maxWidth: '400px',
@@ -95,10 +97,27 @@ const BarcodeScanner = () => {
           border: 'none',
           borderRadius: '8px',
           fontSize: '16px',
-          marginBottom: '20px'
+          marginBottom: '10px'
         }}
       >
         {isScanning ? '⏹️ Detener' : '📷 Escanear'}
+      </button>
+
+      <button 
+        onClick={copyToClipboard}
+        disabled={scannedItems.length === 0}
+        style={{
+          width: '100%',
+          padding: '10px',
+          backgroundColor: scannedItems.length === 0 ? '#9ca3af' : '#10b981',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '16px',
+          marginBottom: '20px'
+        }}
+      >
+        📋 Copiar Lista
       </button>
 
       <div 
