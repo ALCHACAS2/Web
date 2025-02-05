@@ -16,7 +16,8 @@ const BarcodeScanner = () => {
         target: scannerRef.current,
         constraints: {
           facingMode: "environment",
-          aspectRatio: { min: 1, max: 2 }
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
         },
       },
       locate: true,
@@ -88,7 +89,7 @@ const BarcodeScanner = () => {
         onClick={isScanning ? stopScanner : startScanner}
         className={`scanner-button ${isScanning ? 'stop' : 'start'}`}
       >
-        {isScanning ? '⏹️ Detener' : '📷 Escanearr'}
+        {isScanning ? '⏹️ Detener' : '📷 Escanear'}
       </button>
 
       <button 
