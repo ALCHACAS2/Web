@@ -88,7 +88,7 @@ const BarcodeScanner = () => {
         onClick={isScanning ? stopScanner : startScanner}
         className={`scanner-button ${isScanning ? 'stop' : 'start'}`}
       >
-        {isScanning ? '⏹️ Detener' : '📷 Escanear'}
+        {isScanning ? '⏹️ Detener' : '📷 Escanearr'}
       </button>
 
       <button 
