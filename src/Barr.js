@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Quagga from 'quagga';
+import './BarcodeScanner.css';
 
 const BarcodeScanner = () => {
   const [scannedItems, setScannedItems] = useState([]);
@@ -20,7 +21,7 @@ const BarcodeScanner = () => {
       },
       locate: true,
       decoder: {
-        readers: ["ean_reader", "ean_8_reader"],
+        readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader"],
         debug: {
           drawBoundingBox: true,
           showPattern: true,
@@ -82,23 +83,10 @@ const BarcodeScanner = () => {
   };
 
   return (
-    <div style={{
-      maxWidth: '400px',
-      margin: '20px auto',
-      padding: '20px',
-    }}>
+    <div className="scanner-container">
       <button 
         onClick={isScanning ? stopScanner : startScanner}
-        style={{
-          width: '100%',
-          padding: '15px',
-          backgroundColor: isScanning ? '#dc2626' : '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '16px',
-          marginBottom: '10px'
-        }}
+        className={`scanner-button ${isScanning ? 'stop' : 'start'}`}
       >
         {isScanning ? '⏹️ Detener' : '📷 Escanear'}
       </button>
@@ -106,75 +94,25 @@ const BarcodeScanner = () => {
       <button 
         onClick={copyToClipboard}
         disabled={scannedItems.length === 0}
-        style={{
-          width: '100%',
-          padding: '10px',
-          backgroundColor: scannedItems.length === 0 ? '#9ca3af' : '#10b981',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '16px',
-          marginBottom: '20px'
-        }}
+        className="copy-button"
       >
         📋 Copiar Lista
       </button>
 
-      <div 
-        ref={scannerRef}
-        style={{
-          position: 'relative',
-          border: isScanning ? '2px solid #2563eb' : 'none',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          display: isScanning ? 'block' : 'none',
-          marginBottom: '20px'
-        }}
-      >
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '80%',
-          height: '2px',
-          backgroundColor: 'red',
-          zIndex: 1
-        }}/>
+      <div ref={scannerRef} className={`scanner-view ${isScanning ? 'active' : ''}`}>
+        <div className="scanner-line"/>
       </div>
 
       {lastScanned && (
-        <div style={{
-          backgroundColor: '#f3f4f6',
-          padding: '15px',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
-          <p style={{ margin: 0, fontWeight: 'bold' }}>Último escaneado:</p>
-          <p style={{ 
-            margin: '5px 0 0 0',
-            fontFamily: 'monospace',
-            fontSize: '18px' 
-          }}>{lastScanned}</p>
+        <div className="last-scanned">
+          <p className="label">Último escaneado:</p>
+          <p className="code">{lastScanned}</p>
         </div>
       )}
 
-      <div style={{
-        maxHeight: '300px',
-        overflowY: 'auto',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px'
-      }}>
+      <div className="scanned-list">
         {scannedItems.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              padding: '10px',
-              borderBottom: '1px solid #e5e7eb',
-              fontFamily: 'monospace',
-              fontSize: '16px'
-            }}
-          >
+          <div key={item.id} className="scanned-item">
             {item.code}
           </div>
         ))}

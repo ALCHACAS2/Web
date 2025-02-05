@@ -1,0 +1,98 @@
+.scanner-container {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+  }
+  
+  .scanner-button {
+    width: 100%;
+    padding: 15px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  
+  .scanner-button.start {
+    background-color: #2563eb;
+  }
+  
+  .scanner-button.stop {
+    background-color: #dc2626;
+  }
+  
+  .copy-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+  
+  .copy-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  .scanner-view {
+    position: relative;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+    margin-bottom: 20px;
+  }
+  
+  .scanner-view.active {
+    display: block;
+  }
+  
+  .scanner-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 2px;
+    background-color: red;
+    z-index: 1;
+  }
+  
+  .last-scanned {
+    background-color: #f3f4f6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .last-scanned .label {
+    margin: 0;
+    font-weight: bold;
+  }
+  
+  .last-scanned .code {
+    margin: 5px 0 0 0;
+    font-family: monospace;
+    font-size: 18px;
+  }
+  
+  .scanned-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+  
+  .scanned-item {
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+    font-family: monospace;
+    font-size: 16px;
+  }
+  
